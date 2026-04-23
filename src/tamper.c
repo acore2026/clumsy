@@ -103,13 +103,13 @@ static short tamperProcess(PacketNode *head, PacketNode *tail) {
                 if (dataLen <= 4) {
                     // for short packet just tamper it all
                     tamper_buf(data, dataLen);
-                    LOG("tampered w/ chance %.1f, dochecksum: %d, short packet changed all", chance/100.0, doChecksum);
+                    FORWARD_LOG("tampered w/ chance %.1f, dochecksum: %d, short packet changed all", chance/100.0, doChecksum);
                 } else {
                     // for longer ones process 1/4 of the lens start somewhere in the middle
                     UINT len = dataLen;
                     UINT len_d4 = len / 4;
                     tamper_buf(data + len/2 - len_d4/2 + 1, len_d4);
-                    LOG("tampered w/ chance %.1f, dochecksum: %d, changing %d bytes out of %u", chance/100.0, doChecksum, len_d4, len);
+                    FORWARD_LOG("tampered w/ chance %.1f, dochecksum: %d, changing %d bytes out of %u", chance/100.0, doChecksum, len_d4, len);
                 }
                 // FIXME checksum seems to have some problem
                 if (doChecksum) {

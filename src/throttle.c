@@ -94,7 +94,7 @@ static void throttleStartUp() {
 
 static void clearBufPackets(PacketNode *tail) {
     PacketNode *oldLast = tail->prev;
-    LOG("Throttled end, send all %d packets. Buffer at max: %s", bufSize, bufSize == KEEP_AT_MOST ? "YES" : "NO");
+    FORWARD_LOG("Throttled end, send all %d packets. Buffer at max: %s", bufSize, bufSize == KEEP_AT_MOST ? "YES" : "NO");
     while (!isBufEmpty()) {
         insertAfter(popNode(bufTail->prev), oldLast);
         --bufSize;
@@ -103,7 +103,7 @@ static void clearBufPackets(PacketNode *tail) {
 }
 
 static void dropBufPackets() {
-    LOG("Throttled end, drop all %d packets. Buffer at max: %s", bufSize, bufSize == KEEP_AT_MOST ? "YES" : "NO");
+    FORWARD_LOG("Throttled end, drop all %d packets. Buffer at max: %s", bufSize, bufSize == KEEP_AT_MOST ? "YES" : "NO");
     while (!isBufEmpty()) {
         freeNode(popNode(bufTail->prev));
         --bufSize;
@@ -124,7 +124,7 @@ static short throttleProcess(PacketNode *head, PacketNode *tail) {
     UNREFERENCED_PARAMETER(head);
     if (!throttleStartTick) {
         if (!isListEmpty() && calcChance(chance)) {
-            LOG("Start new throttling w/ chance %.1f, time frame: %d", chance/10.0, throttleFrame);
+            FORWARD_LOG("Start new throttling w/ chance %.1f, time frame: %d", chance/10.0, throttleFrame);
             throttleStartTick = timeGetTime();
             throttled = TRUE;
             goto THROTTLE_START; // need this goto since maybe we'll start and stop at this single call

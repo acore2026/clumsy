@@ -124,7 +124,7 @@ static short bandwidthProcess(PacketNode *head, PacketNode* tail) {
 			int rate = crate_stats_calculate(rateStats, now_ts);
 			int size = pac->packetLen;
 			if (rate + size > limit) {
-				LOG("dropped with bandwidth %dKB/s, direction %s",
+				FORWARD_LOG("dropped with bandwidth %dKB/s, direction %s",
 					(int)bandwidthLimit, pac->addr.Outbound ? "OUTBOUND" : "INBOUND");
 				discard = 1;
 			}
@@ -297,5 +297,4 @@ int32_t crate_stats_calculate(CRateStats *rate, uint32_t now_ts)
 
 	return (int32_t)r;
 }
-
 

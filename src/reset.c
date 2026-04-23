@@ -100,7 +100,7 @@ static short resetProcess(PacketNode *head, PacketNode *tail) {
                 NULL);
 
             if (pTcpHdr != NULL) {
-                LOG("injecting reset w/ chance %.1f%%", chance/100.0);
+                FORWARD_LOG("injecting reset w/ chance %.1f%%", chance/100.0);
                 pTcpHdr->Rst = 1;
                 WinDivertHelperCalcChecksums(pac->packet, pac->packetLen, NULL, 0);
 

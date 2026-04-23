@@ -40,6 +40,7 @@ static Ihandle *timeout = NULL;
 
 void showStatus(const char *line);
 static int uiOnDialogShow(Ihandle *ih, int state);
+static int uiDialogCloseCb(Ihandle *ih);
 static int uiStopCb(Ihandle *ih);
 static int uiStartCb(Ihandle *ih);
 static int uiTimerCb(Ihandle *ih);
@@ -469,6 +470,7 @@ void init(int argc, char* argv[]) {
     IupSetAttribute(dialog, "SIZE", "560x420");
     IupSetAttribute(dialog, "RESIZE", "NO");
     IupSetCallback(dialog, "SHOW_CB", (Icallback)uiOnDialogShow);
+    IupSetCallback(dialog, "CLOSE_CB", (Icallback)uiDialogCloseCb);
 
 
     // global layout settings to affect childrens
@@ -508,11 +510,16 @@ void startup() {
 }
 
 void cleanup() {
+    stopFilteringCurrentRun();
     remoteServerStop();
 
-    IupDestroy(timer);
+    if (timer != NULL) {
+        IupDestroy(timer);
+        timer = NULL;
+    }
     if (timeout) {
         IupDestroy(timeout);
+        timeout = NULL;
     }
 
     IupClose();
@@ -619,6 +626,15 @@ static int uiOnDialogShow(Ihandle *ih, int state) {
     }
 
     return exit ? IUP_CLOSE : IUP_DEFAULT;
+}
+
+static int uiDialogCloseCb(Ihandle *ih) {
+    UNREFERENCED_PARAMETER(ih);
+
+    stopFilteringCurrentRun();
+    remoteServerStop();
+
+    return IUP_CLOSE;
 }
 
 static BOOL startFilteringWithCurrentState(char buf[MSG_BUFSIZE]) {

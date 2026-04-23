@@ -169,7 +169,7 @@ static void lagCloseDown(PacketNode *head, PacketNode *tail) {
     PacketNode *oldLast = tail->prev;
     UNREFERENCED_PARAMETER(head);
     // flush all buffered packets
-    LOG("Closing down lag, flushing %d packets", bufSize);
+    FORWARD_LOG("Closing down lag, flushing %d packets", bufSize);
     while(!isBufEmpty()) {
         insertAfter(popNode(bufTail->prev), oldLast);
         --bufSize;
@@ -184,7 +184,7 @@ static short lagProcess(PacketNode *head, PacketNode *tail) {
     while (bufSize < KEEP_AT_MOST && pac != head) {
         if (checkDirection(pac->addr.Outbound, lagInbound, lagOutbound)) {
             PacketNode *lagged = insertAfter(popNode(pac), bufHead);
-            lagged->timestamp = timeGetTime() + chooseLagDelay();
+            lagged->timestamp = currentTime + chooseLagDelay();
             ++bufSize;
             pac = tail->prev;
         } else {
@@ -198,9 +198,9 @@ static short lagProcess(PacketNode *head, PacketNode *tail) {
         if (currentTime >= pac->timestamp) {
             insertAfter(popNode(bufTail->prev), head); // sending queue is already empty by now
             --bufSize;
-            LOG("Send lagged packets.");
+            FORWARD_LOG("Send lagged packets.");
         } else {
-            LOG("Sent some lagged packets, still have %d in buf", bufSize);
+            FORWARD_LOG("Sent some lagged packets, still have %d in buf", bufSize);
             break;
         }
     }

@@ -90,6 +90,12 @@ static void VsLog(const char* pFmt, ...)
 #define LOG(fmt, ...) (VsLog(__FUNCTION__ ": " fmt "\n", ##__VA_ARGS__))
 #endif
 
+#ifdef CLUMSY_ENABLE_FORWARDING_LOG
+#define FORWARD_LOG(fmt, ...) LOG(fmt, ##__VA_ARGS__)
+#else
+#define FORWARD_LOG(fmt, ...)
+#endif
+
 // check for assert
 #ifndef assert
 // some how vs can't trigger debugger on assert, which is really stupid
@@ -99,6 +105,7 @@ static void VsLog(const char* pFmt, ...)
 
 #else
 #define LOG(fmt, ...)
+#define FORWARD_LOG(fmt, ...)
 #define ABORT()
 //#define assert(x)
 #endif
@@ -107,9 +114,12 @@ static void VsLog(const char* pFmt, ...)
 typedef struct _NODE {
     char *packet;
     UINT packetLen;
+    UINT packetCapacity;
+    unsigned short packetBucket;
     WINDIVERT_ADDRESS addr;
     DWORD timestamp; // used by lag as the packet release tick
     struct _NODE *prev, *next;
+    struct _NODE *poolNext;
 } PacketNode;
 
 void initPacketNodeList();

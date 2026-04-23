@@ -32,6 +32,7 @@ PWINDIVERT_ICMPHDR dbg_icmp_header;
 PWINDIVERT_ICMPV6HDR dbg_icmpv6_header;
 UINT payload_len;
 void dumpPacket(char *buf, int len, PWINDIVERT_ADDRESS paddr) {
+#ifdef CLUMSY_ENABLE_FORWARDING_LOG
     char *protocol;
     UINT16 srcPort = 0, dstPort = 0;
 
@@ -56,7 +57,7 @@ void dumpPacket(char *buf, int len, PWINDIVERT_ADDRESS paddr) {
     if (dbg_ip_header != NULL) {
         UINT8 *src_addr = (UINT8*)&dbg_ip_header->SrcAddr;
         UINT8 *dst_addr = (UINT8*)&dbg_ip_header->DstAddr;
-        LOG("%s.%s: %u.%u.%u.%u:%d->%u.%u.%u.%u:%d",
+        FORWARD_LOG("%s.%s: %u.%u.%u.%u:%d->%u.%u.%u.%u:%d",
             protocol,
             paddr->Outbound ? "OUT " : "IN  ",
             src_addr[0], src_addr[1], src_addr[2], src_addr[3], srcPort,
@@ -64,7 +65,7 @@ void dumpPacket(char *buf, int len, PWINDIVERT_ADDRESS paddr) {
     } else if (dbg_ipv6_header != NULL) {
         UINT16 *src_addr6 = (UINT16*)&dbg_ipv6_header->SrcAddr;
         UINT16 *dst_addr6 = (UINT16*)&dbg_ipv6_header->DstAddr;
-        LOG("%s.%s: %x:%x:%x:%x:%x:%x:%x:%x:%d->%x:%x:%x:%x:%x:%x:%x:%x:%d",
+        FORWARD_LOG("%s.%s: %x:%x:%x:%x:%x:%x:%x:%x:%d->%x:%x:%x:%x:%x:%x:%x:%x:%d",
             protocol,
             paddr->Outbound ? "OUT " : "IN  ",
             src_addr6[0], src_addr6[1], src_addr6[2], src_addr6[3],
@@ -72,6 +73,11 @@ void dumpPacket(char *buf, int len, PWINDIVERT_ADDRESS paddr) {
             dst_addr6[0], dst_addr6[1], dst_addr6[2], dst_addr6[3],
             dst_addr6[4], dst_addr6[5], dst_addr6[6], dst_addr6[7], dstPort);
     }
+#else
+    UNREFERENCED_PARAMETER(buf);
+    UNREFERENCED_PARAMETER(len);
+    UNREFERENCED_PARAMETER(paddr);
+#endif
 }
 #else
 #define dumpPacket(x, y, z)
@@ -156,7 +162,7 @@ static int sendAllListPackets() {
             PWINDIVERT_ICMPV6HDR icmpv6_header;
             PWINDIVERT_IPHDR ip_header;
             PWINDIVERT_IPV6HDR ipv6_header;
-            LOG("Failed to send a packet. (%lu)", GetLastError());
+            FORWARD_LOG("Failed to send a packet. (%lu)", GetLastError());
             dumpPacket(pnode->packet, pnode->packetLen, &(pnode->addr));
             // as noted in windivert help, reinject inbound icmp packets some times would fail
             // workaround this by resend them as outbound
@@ -178,7 +184,8 @@ static int sendAllListPackets() {
                     memcpy(ipv6_header->DstAddr, tmpArr, sizeof(tmpArr));
                 }
                 resent = WinDivertSend(divertHandle, pnode->packet, pnode->packetLen, &sendLen, &(pnode->addr));
-                LOG("Resend failed inbound ICMP packets as outbound: %s", resent ? "SUCCESS" : "FAIL");
+                FORWARD_LOG("Resend failed inbound ICMP packets as outbound: %s", resent ? "SUCCESS" : "FAIL");
+                (void)resent;
                 InterlockedExchange16(&sendState, SEND_STATUS_SEND);
             } else {
                 InterlockedExchange16(&sendState, SEND_STATUS_FAIL);
@@ -186,7 +193,7 @@ static int sendAllListPackets() {
         } else {
             if (sendLen < pnode->packetLen) {
                 // TODO don't know how this can happen, or it needs to be resent like good old UDP packet
-                LOG("Internal Error: DivertSend truncated send packet.");
+                FORWARD_LOG("Internal Error: DivertSend truncated send packet.");
                 InterlockedExchange16(&sendState, SEND_STATUS_FAIL);
             } else {
                 InterlockedExchange16(&sendState, SEND_STATUS_SEND);
@@ -227,10 +234,11 @@ static void divertConsumeStep() {
         }
     }
     cnt = sendAllListPackets();
+    (void)cnt;
 #ifdef _DEBUG
     dt =  GetTickCount() - startTick;
     if (dt > CLOCK_WAITMS / 2) {
-        LOG("Costy consume step: %lu ms, sent %d packets", GetTickCount() - startTick, cnt);
+        FORWARD_LOG("Costy consume step: %lu ms, sent %d packets", GetTickCount() - startTick, cnt);
     }
 #endif
 }
@@ -264,7 +272,7 @@ static DWORD divertClockLoop(LPVOID arg) {
                 break;
             case WAIT_TIMEOUT:
                 // read loop is processing, so we can skip this run
-                LOG("!!! Skipping one run");
+                FORWARD_LOG("!!! Skipping one run");
                 Sleep(CLOCK_WAITMS);
                 break;
             case WAIT_ABANDONED:
@@ -338,12 +346,12 @@ static DWORD divertReadLoop(LPVOID arg) {
                 LOG("Handle died or operation aborted. Exit loop.");
                 return 0;
             }
-            LOG("Failed to recv a packet. (%lu)", GetLastError());
+            FORWARD_LOG("Failed to recv a packet. (%lu)", GetLastError());
             continue;
         }
         if (readLen > MAX_PACKETSIZE) {
             // don't know how this can happen
-            LOG("Internal Error: DivertRecv truncated recv packet."); 
+            FORWARD_LOG("Internal Error: DivertRecv truncated recv packet."); 
         }
 
         //dumpPacket(packetBuf, readLen, &addrBuf);  
@@ -371,7 +379,7 @@ static DWORD divertReadLoop(LPVOID arg) {
                 }
                 break;
             case WAIT_TIMEOUT:
-                LOG("Acquire timeout, dropping one read packet");
+                FORWARD_LOG("Acquire timeout, dropping one read packet");
                 continue;
                 break;
             case WAIT_ABANDONED:

@@ -106,7 +106,7 @@ static void swapNode(PacketNode *a, PacketNode *b) {
 static short oodProcess(PacketNode *head, PacketNode *tail) {
     if (oodPacket != NULL) {
         if (!isListEmpty() || --giveUpCnt == 0) {
-            LOG("Ooo sent direction %s, is giveup %s", oodPacket->addr.Outbound ? "OUTBOUND" : "INBOUND", giveUpCnt ? "NO" : "YES");
+            FORWARD_LOG("Ooo sent direction %s, is giveup %s", oodPacket->addr.Outbound ? "OUTBOUND" : "INBOUND", giveUpCnt ? "NO" : "YES");
             insertAfter(oodPacket, head);
             oodPacket = NULL;
             giveUpCnt = KEEP_TURNS_MAX;
@@ -117,7 +117,7 @@ static short oodProcess(PacketNode *head, PacketNode *tail) {
             // only contains a single packet, then pick it out and insert later
             if (checkDirection(pac->addr.Outbound, oodInbound, oodOutbound) && calcChance(chance)) {
                 oodPacket = popNode(pac);
-                LOG("Ooo picked packet w/ chance %.1f%%, direction %s", chance/100.0, pac->addr.Outbound ? "OUTBOUND" : "INBOUND");
+                FORWARD_LOG("Ooo picked packet w/ chance %.1f%%, direction %s", chance/100.0, pac->addr.Outbound ? "OUTBOUND" : "INBOUND");
                 return TRUE;
             }
         } else if (calcChance(chance)) {
@@ -129,7 +129,7 @@ static short oodProcess(PacketNode *head, PacketNode *tail) {
                 // calculate chance per swap
                 if (first && second && calcChance(chance)) {
                     swapNode(first, second);
-                    LOG("Multiple packets OOD swapping");
+                    FORWARD_LOG("Multiple packets OOD swapping");
                 } else {
                     // move forward first to progress
                     first = second;
