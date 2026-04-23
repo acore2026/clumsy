@@ -72,6 +72,23 @@ function Resolve-CommandPath {
     return $null
 }
 
+function Resolve-SiblingCommandPath {
+    param(
+        [string]$ReferenceCommandPath,
+        [string[]]$Candidates
+    )
+
+    $referenceDir = Split-Path -Parent $ReferenceCommandPath
+    foreach ($candidate in $Candidates) {
+        $candidatePath = Join-Path $referenceDir ($candidate + ".exe")
+        if (Test-Path $candidatePath) {
+            return $candidatePath
+        }
+    }
+
+    return $null
+}
+
 function Invoke-External {
     param(
         [string]$FilePath,
@@ -117,7 +134,10 @@ function Get-Toolchain {
         throw "Unable to find a GCC compiler. Install MinGW-w64/TDM-GCC and ensure gcc is on PATH."
     }
 
-    $windresPath = Resolve-CommandPath -Candidates $windresCandidates
+    $windresPath = Resolve-SiblingCommandPath -ReferenceCommandPath $gccPath -Candidates $windresCandidates
+    if (-not $windresPath) {
+        $windresPath = Resolve-CommandPath -Candidates $windresCandidates
+    }
     if (-not $windresPath) {
         throw "Unable to find windres. Install a MinGW-compatible binutils package and ensure windres is on PATH."
     }
@@ -205,7 +225,7 @@ New-Item -ItemType Directory -Force -Path $objectDir | Out-Null
 
 $windresArgs = @("-O", "coff")
 if ($Arch -eq "x64") {
-    $windresArgs += "-DX64"
+    $windresArgs += @("-DX64", "-F", "pe-x86-64")
 } else {
     $windresArgs += @("-DX86", "-F", "pe-i386")
 }
