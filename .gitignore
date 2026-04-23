@@ -2,6 +2,7 @@ bin/
 build/
 out/
 out-script-test/
+dist/
 tmp/
 zig-cache/
 zig-out/

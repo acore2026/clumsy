@@ -24,3 +24,10 @@ Simulate network latency, delay, packet loss with clumsy on Windows 7/8/10:
 ## License
 
 MIT
+
+## GitHub Automation
+
+This repository includes GitHub Actions automation for Windows builds and releases:
+
+* Pushes and pull requests build `Release` binaries for `x64` and `x86`.
+* Pushing a tag like `v0.3.1` builds `Ship` binaries, packages ZIP assets, and publishes a GitHub Release automatically.
