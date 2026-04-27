@@ -126,6 +126,9 @@ static void sendJsonResponse(SOCKET sock, int statusCode, const char *jsonBody) 
         sizeof(response),
         "HTTP/1.1 %d %s\r\n"
         "Content-Type: application/json\r\n"
+        "Access-Control-Allow-Origin: *\r\n"
+        "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n"
+        "Access-Control-Allow-Headers: Content-Type\r\n"
         "Content-Length: %d\r\n"
         "Connection: close\r\n"
         "\r\n",
@@ -140,6 +143,19 @@ static void sendJsonResponse(SOCKET sock, int statusCode, const char *jsonBody) 
 
     sendAll(sock, response, headerLen);
     sendAll(sock, jsonBody, bodyLen);
+}
+
+static void sendOptionsResponse(SOCKET sock) {
+    const char *response =
+        "HTTP/1.1 204 No Content\r\n"
+        "Access-Control-Allow-Origin: *\r\n"
+        "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n"
+        "Access-Control-Allow-Headers: Content-Type\r\n"
+        "Content-Length: 0\r\n"
+        "Connection: close\r\n"
+        "\r\n";
+
+    sendAll(sock, response, (int)strlen(response));
 }
 
 static void buildErrorJson(char out[REMOTE_RESPONSE_MAX], const char *message) {
@@ -441,6 +457,11 @@ static void handleClient(SOCKET client) {
     if (sscanf(request, "%15s %255s %15s", method, path, version) != 3) {
         buildErrorJson(body, "Malformed HTTP request.");
         sendJsonResponse(client, 400, body);
+        return;
+    }
+
+    if (strcmp(method, "OPTIONS") == 0) {
+        sendOptionsResponse(client);
         return;
     }
 
